@@ -81,7 +81,7 @@ def demo(input_data=None):
   return output_data
   #print('DONE')
 def main(_argv):
-  #save_tflite()
+  save_tflite()
   import cv2
   img_i=cv2.imread(FLAGS.img_i)
   imH=640
