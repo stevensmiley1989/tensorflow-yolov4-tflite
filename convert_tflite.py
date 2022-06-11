@@ -8,11 +8,12 @@ import core.utils as utils
 import os
 from core.config import cfg
 
-flags.DEFINE_string('weights', './checkpoints/yolov4-416', 'path to weights file')
-flags.DEFINE_string('output', './checkpoints/yolov4-416-fp32.tflite', 'path to output')
-flags.DEFINE_integer('input_size', 416, 'path to output')
+flags.DEFINE_string('weights', './checkpoints/tiny_yolo-Elements_Combined_transporter9_only_upto_5_15_2022_aug_w640_h640_d0_c2_train_best', 'path to weights file')
+flags.DEFINE_string('output', './checkpoints/tiny_yolo-Elements_Combined_transporter9_only_upto_5_15_2022_aug_w640_h640_d0_c2_train_best-fp32.tflite', 'path to output')
+flags.DEFINE_integer('input_size', 640, 'path to output')
 flags.DEFINE_string('quantize_mode', 'float32', 'quantize mode (int8, float16, float32)')
 flags.DEFINE_string('dataset', "/Volumes/Elements/data/coco_dataset/coco/5k.txt", 'path to dataset')
+flags.DEFINE_string('img_i',"data/20220515p2_toyrc_DJI_002200000023.jpg","path to sample img")
 
 def representative_data_gen():
   fimage = open(FLAGS.dataset).read().split()
@@ -35,41 +36,64 @@ def save_tflite():
     converter.target_spec.supported_types = [tf.compat.v1.lite.constants.FLOAT16]
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
     converter.allow_custom_ops = True
+    converter.experimental_enable_resource_variables = True
   elif FLAGS.quantize_mode == 'int8':
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
     converter.allow_custom_ops = True
     converter.representative_dataset = representative_data_gen
+  else:
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
+    converter.allow_custom_ops = True
+    converter.experimental_enable_resource_variables = True
 
   tflite_model = converter.convert()
   open(FLAGS.output, 'wb').write(tflite_model)
 
   logging.info("model saved to: {}".format(FLAGS.output))
 
-def demo():
+def demo(input_data=None):
   interpreter = tf.lite.Interpreter(model_path=FLAGS.output)
   interpreter.allocate_tensors()
   logging.info('tflite model loaded')
 
   input_details = interpreter.get_input_details()
+  print('\ninput_details\n')
   print(input_details)
   output_details = interpreter.get_output_details()
+  print('\noutput_details\n')
   print(output_details)
 
   input_shape = input_details[0]['shape']
-
-  input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
-
+  #if input_data:
+  #  input_data=input_data
+  #else:
+  #input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
+  print('input_data',input_data)
   interpreter.set_tensor(input_details[0]['index'], input_data)
+  print('about to invoke')
   interpreter.invoke()
   output_data = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
 
   print(output_data)
-
+  return output_data
+  #print('DONE')
 def main(_argv):
-  save_tflite()
-  demo()
+  #save_tflite()
+  import cv2
+  img_i=cv2.imread(FLAGS.img_i)
+  imH=640
+  imW=640
+  
+  img_i=cv2.resize(img_i,(imH,imW),interpolation=cv2.INTER_AREA)
+  #img_i=cv2.dnn.blobFromImage(img_i,1/255.0,(imH,imW),swapRB=True,crop=False)
+  img_i=np.expand_dims(np.array(img_i,dtype=np.float32),axis=0)
+
+  print(img_i.shape)
+  output_data=demo(img_i)
+  
 
 if __name__ == '__main__':
     try:

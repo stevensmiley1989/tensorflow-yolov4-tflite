@@ -13,13 +13,13 @@ import numpy as np
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
-flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
-flags.DEFINE_string('weights', './checkpoints/yolov4-416',
+flags.DEFINE_string('framework', 'tflite', '(tf, tflite, trt')
+flags.DEFINE_string('weights', './checkpoints/tiny_yolo-Elements_Combined_transporter9_only_upto_5_15_2022_aug_w640_h640_d0_c2_train_best-fp32.tflite',
                     'path to weights file')
-flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
+flags.DEFINE_integer('size', 640, 'resize images to')
+flags.DEFINE_boolean('tiny', True, 'yolo or yolo-tiny')
 flags.DEFINE_string('model', 'yolov4', 'yolov3 or yolov4')
-flags.DEFINE_string('image', './data/kite.jpg', 'path to input image')
+flags.DEFINE_string('image', './data/20220515p2_toyrc_DJI_002200000023.jpg', 'path to input image')
 flags.DEFINE_string('output', 'result.png', 'path to output image')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.25, 'score threshold')
@@ -36,7 +36,7 @@ def main(_argv):
     original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
 
     # image_data = utils.image_preprocess(np.copy(original_image), [input_size, input_size])
-    image_data = cv2.resize(original_image, (input_size, input_size))
+    image_data = cv2.resize(original_image, (input_size, input_size),interpolation=cv2.INTER_AREA)
     image_data = image_data / 255.
     # image_data = image_data[np.newaxis, ...].astype(np.float32)
 
@@ -65,8 +65,12 @@ def main(_argv):
         batch_data = tf.constant(images_data)
         pred_bbox = infer(batch_data)
         for key, value in pred_bbox.items():
+            print('key','value')
+            print(key,value)
             boxes = value[:, :, 0:4]
             pred_conf = value[:, :, 4:]
+            print(boxes)
+            print(pred_conf)
 
     boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
         boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
@@ -78,6 +82,7 @@ def main(_argv):
         score_threshold=FLAGS.score
     )
     pred_bbox = [boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()]
+    print(pred_bbox)
     image = utils.draw_bbox(original_image, pred_bbox)
     # image = utils.draw_bbox(image_data*255, pred_bbox)
     image = Image.fromarray(image.astype(np.uint8))
