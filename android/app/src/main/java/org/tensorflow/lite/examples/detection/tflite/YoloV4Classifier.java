@@ -38,6 +38,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.tensorflow.lite.Interpreter;
+
+import org.tensorflow.lite.Interpreter.Options; //edit sjs
+
+import org.tensorflow.lite.InterpreterApi;
 import org.tensorflow.lite.examples.detection.MainActivity;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
@@ -138,14 +142,19 @@ public class YoloV4Classifier implements Classifier {
     @Override
     public void close() {
     }
-
+    //public void setNumThreads(int num_threads) {
+    //    if (tfLite != null) tflite.setNumThreads(num_threads);
+    //}
     public void setNumThreads(int num_threads) {
-        if (tfLite != null) tfLite.setNumThreads(num_threads);
+        if (tfLite != null) new Options().setNumThreads(num_threads);
     }
 
     @Override
+   // public void setUseNNAPI(boolean isChecked) {
+   //     if (tfLite != null) tfLite.setUseNNAPI(isChecked);
+   // }
     public void setUseNNAPI(boolean isChecked) {
-        if (tfLite != null) tfLite.setUseNNAPI(isChecked);
+        if (tfLite != null) new Options().setUseNNAPI(isChecked);
     }
 
     @Override
@@ -161,7 +170,8 @@ public class YoloV4Classifier implements Classifier {
     private static final float IMAGE_STD = 255.0f;
 
     //config yolov4
-    private static final int INPUT_SIZE = 416;
+    //private static final int INPUT_SIZE = 416;
+    private static final int INPUT_SIZE = 640;//edit sjs
     private static final int[] OUTPUT_WIDTH = new int[]{52, 26, 13};
 
     private static final int[][] MASKS = new int[][]{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
@@ -173,16 +183,20 @@ public class YoloV4Classifier implements Classifier {
     private static final int NUM_BOXES_PER_BLOCK = 3;
 
     // Number of threads in the java app
-    private static final int NUM_THREADS = 4;
+    //private static final int NUM_THREADS = 4;
+    private static final int NUM_THREADS = 1;//edit sjs, you can change this to more to speed up
     private static boolean isNNAPI = false;
-    private static boolean isGPU = true;
+    //rivate static boolean isGPU = true;
+    private static boolean isGPU = false; //edit sjs, you can change this to use GPU if you have it
 
     // tiny or not
-    private static boolean isTiny = false;
+    private static boolean isTiny = true;
 
     // config yolov4 tiny
-    private static final int[] OUTPUT_WIDTH_TINY = new int[]{2535, 2535};
+
     private static final int[] OUTPUT_WIDTH_FULL = new int[]{10647, 10647};
+    //private static final int[] OUTPUT_WIDTH_TINY = new int[]{2535, 2535};
+    private static final int[] OUTPUT_WIDTH_TINY = new int[]{6000, 6000}; //edit sjs
     private static final int[][] MASKS_TINY = new int[][]{{3, 4, 5}, {1, 2, 3}};
     private static final int[] ANCHORS_TINY = new int[]{
             23, 27, 37, 58, 81, 82, 81, 82, 135, 169, 344, 319};
